@@ -10,6 +10,9 @@ function init() {
           .text(sample)
           .property("value", sample);
       });
+      const firstSample = sampleNames[0];
+      buildCharts(firstSample);
+      buildMetadata(firstSample);
   })}
   
   init();
@@ -67,16 +70,65 @@ function buildCharts(sample) {
     var barChart = d3.select("#bar");
     var sample_count = sampleResult.sample_values;
     var bact_ids = sampleResult.otu_ids;
+    var otu_labels = sampleResult.otu_labels;
     var sample_ct_bar = sample_count.slice(0,10);
     var bact_ids_bar_1 = bact_ids.slice(0, 10);
-    var bact_ids_bar = bact_ids_bar_1.toString();
+    var bact_ids_bar = bact_ids_bar_1.map(otuID => `OTU ${otuID}`)
     var trace = {
       x : sample_ct_bar,
       y : bact_ids_bar,
-      type: "bar",
+      type: "bar", text: otu_labels.slice(0,10),
       orientation: 'h'
       };
-    Plotly.newPlot("bar",[trace])
-  });
-}
+    var bar_layout = {
+      yaxis: {
+        autorange: 'reversed'
+      }
+    };
+    Plotly.newPlot("bar",[trace],bar_layout)}
+    );
+  d3.json("samples.json").then((data) => {
+    samples = data.samples;
+    var sampleArray = samples.filter(sampleObj => sampleObj.id == sample);
+    var sampleResult = sampleArray[0];
+    var sample_count = sampleResult.sample_values;
+    var bact_ids = sampleResult.otu_ids;
+    var otu_labels = sampleResult.otu_labels;
+    var sample_ct_bar = sample_count;
+    var trace1 = {
+      x: bact_ids,
+      y: sample_ct_bar,
+      text: otu_labels,
+      mode: 'markers',
+      marker: {size: sample_ct_bar,
+      color: bact_ids,
+    colorscale:"Earth"} 
+    }
+    var bubbleDetails = {
+      xaxis: {title: "OTU ID"}
+    }
+    Plotly.newPlot("bubble",[trace1],bubbleDetails)
+    });
+  d3.json("samples.json").then((data => {
+    var metadata = data.metadata;
+    var resultArray = metadata.filter(sampleObj => sampleObj.id == sample);
+    var result = resultArray[0];
+    var washingFrequency = result.wfreq; 
+    var data = [
+      {
+        domain: { x: [0, 1], y: [0, 1] },
+        value: washingFrequency,
+        title: { text: "Belly Button Washing Frequency" },
+        type: "indicator",
+        mode: "gauge+number",
+        gauge: {
+          axis: {range: [null, 9]}
+        }
+      }
+    ];
+    var layout = { width: 600, height: 500, margin: { t: 0, b: 0 }, xaxis:{showgrid: false, range: [-1,1]} };
+    Plotly.newPlot('gauge', data, layout);
+  }))
+};
+
 
